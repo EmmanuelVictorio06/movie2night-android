@@ -1,0 +1,364 @@
+package com.movie2night.presentation.matches
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.movie2night.domain.model.Match
+import com.movie2night.domain.model.MatchStatus
+import com.movie2night.navigation.Routes
+
+private val NightBlack     = Color(0xFF07070F)
+private val MidnightPurple = Color(0xFF1A0B3D)
+private val DeepBlue       = Color(0xFF0B1030)
+private val NeonPurple     = Color(0xFFB14CFF)
+private val NeonPink       = Color(0xFFE94FD1)
+private val MutedLavender  = Color(0xFFD0C1D7)
+private val OutlineVariant = Color(0xFF4E4354)
+private val GreenAccept    = Color(0xFF1DB954)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MatchesScreen(
+    navController: NavController,
+    viewModel: MatchesViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    // Separa matches por categoria
+    val pending = uiState.matches.filter {
+        it.status == MatchStatus.PENDING && it.receiverId == viewModel.currentUserId
+    }
+    val accepted = uiState.matches.filter { it.status == MatchStatus.ACCEPTED }
+    val sent = uiState.matches.filter {
+        it.status == MatchStatus.PENDING && it.requesterId == viewModel.currentUserId
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Meus Matches",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = Color.White
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = NightBlack.copy(alpha = 0.9f)
+                )
+            )
+        },
+        containerColor = NightBlack
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(
+                    Brush.verticalGradient(listOf(NightBlack, MidnightPurple, DeepBlue))
+                )
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = NeonPurple
+                    )
+                }
+
+                uiState.matches.isEmpty() -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("🎬", fontSize = 48.sp)
+                        Text(
+                            "Nenhum match ainda",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                        Text(
+                            "Demonstre interesse em sessões\ne envie convites para outros cinéfilos!",
+                            color = MutedLavender,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = { navController.navigate(Routes.Home.route) },
+                            colors = ButtonDefaults.buttonColors(containerColor = NeonPurple),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Ver filmes", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // ── Convites recebidos ──────────────────
+                        if (pending.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Convites recebidos",
+                                    count = pending.size,
+                                    color = NeonPink
+                                )
+                            }
+                            items(pending) { match ->
+                                PendingMatchCard(
+                                    match = match,
+                                    isResponding = uiState.respondingMatchId == match.id,
+                                    onAccept = { viewModel.respondToMatch(match.id, true) },
+                                    onDecline = { viewModel.respondToMatch(match.id, false) }
+                                )
+                            }
+                        }
+
+                        // ── Matches aceitos (chat disponível) ───
+                        if (accepted.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Matches aceitos",
+                                    count = accepted.size,
+                                    color = GreenAccept
+                                )
+                            }
+                            items(accepted) { match ->
+                                AcceptedMatchCard(
+                                    match = match,
+                                    currentUserId = viewModel.currentUserId,
+                                    onOpenChat = {
+                                        navController.navigate(Routes.Chat.withId(match.id))
+                                    }
+                                )
+                            }
+                        }
+
+                        // ── Convites enviados aguardando ────────
+                        if (sent.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Aguardando resposta",
+                                    count = sent.size,
+                                    color = MutedLavender
+                                )
+                            }
+                            items(sent) { match ->
+                                SentMatchCard(match = match)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, count: Int, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            title,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp
+        )
+        Surface(
+            color = color.copy(alpha = 0.15f),
+            shape = RoundedCornerShape(50)
+        ) {
+            Text(
+                "$count",
+                color = color,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PendingMatchCard(
+    match: Match,
+    isResponding: Boolean,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF1C1030).copy(alpha = 0.8f))
+            .border(1.dp, NeonPink.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.Favorite, contentDescription = null,
+                    tint = NeonPink, modifier = Modifier.size(16.dp))
+                Text("Convite recebido", color = NeonPink,
+                    fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Alguém quer ir ao cinema com você!",
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                "Match ID: ${match.id.take(8)}...",
+                color = MutedLavender.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(Modifier.height(14.dp))
+
+            if (isResponding) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = NeonPurple, modifier = Modifier.size(28.dp))
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDecline,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Recusar", color = MaterialTheme.colorScheme.error)
+                    }
+                    Button(
+                        onClick = onAccept,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenAccept)
+                    ) {
+                        Icon(Icons.Default.Favorite, contentDescription = null,
+                            tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Aceitar", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AcceptedMatchCard(
+    match: Match,
+    currentUserId: String,
+    onOpenChat: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF0D1F0D).copy(alpha = 0.8f))
+            .border(1.dp, GreenAccept.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Default.Favorite, contentDescription = null,
+                        tint = GreenAccept, modifier = Modifier.size(16.dp))
+                    Text("Match aceito!", color = GreenAccept,
+                        fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+                Spacer(Modifier.height(4.dp))
+                Text("O chat está disponível!", color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium)
+                Text("ID: ${match.id.take(8)}...",
+                    color = MutedLavender.copy(alpha = 0.5f),
+                    style = MaterialTheme.typography.bodySmall)
+            }
+            Button(
+                onClick = onOpenChat,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                border = androidx.compose.foundation.BorderStroke(1.dp, GreenAccept),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Icon(Icons.Default.Chat, contentDescription = null,
+                    tint = GreenAccept, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Abrir chat", color = GreenAccept, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SentMatchCard(match: Match) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF1C1030).copy(alpha = 0.6f))
+            .border(1.dp, OutlineVariant.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MutedLavender.copy(alpha = 0.5f)
+            )
+            Column {
+                Text("Convite enviado", color = MutedLavender,
+                    fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text("Aguardando resposta...",
+                    color = MutedLavender.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
