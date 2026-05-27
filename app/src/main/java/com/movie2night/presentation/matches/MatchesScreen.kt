@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,10 +32,10 @@ private val NightBlack     = Color(0xFF07070F)
 private val MidnightPurple = Color(0xFF1A0B3D)
 private val DeepBlue       = Color(0xFF0B1030)
 private val NeonPurple     = Color(0xFFB14CFF)
-private val NeonPink       = Color(0xFFE94FD1)
 private val MutedLavender  = Color(0xFFD0C1D7)
 private val OutlineVariant = Color(0xFF4E4354)
 private val GreenAccept    = Color(0xFF1DB954)
+private val NeonPink       = Color(0xFFE94FD1)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +45,6 @@ fun MatchesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Separa matches por categoria
     val pending = uiState.matches.filter {
         it.status == MatchStatus.PENDING && it.receiverId == viewModel.currentUserId
     }
@@ -57,12 +57,14 @@ fun MatchesScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Meus Matches",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = Color.White
-                    )
+                    Text("Meus Matches", fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp, color = Color.White)
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.loadMatches() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Atualizar",
+                            tint = MutedLavender)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = NightBlack.copy(alpha = 0.9f)
@@ -75,9 +77,7 @@ fun MatchesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(
-                    Brush.verticalGradient(listOf(NightBlack, MidnightPurple, DeepBlue))
-                )
+                .background(Brush.verticalGradient(listOf(NightBlack, MidnightPurple, DeepBlue)))
         ) {
             when {
                 uiState.isLoading -> {
@@ -94,26 +94,18 @@ fun MatchesScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text("🎬", fontSize = 48.sp)
+                        Text("Nenhum match ainda", color = Color.White,
+                            fontWeight = FontWeight.Bold, fontSize = 20.sp)
                         Text(
-                            "Nenhum match ainda",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
-                        Text(
-                            "Demonstre interesse em sessões\ne envie convites para outros cinéfilos!",
-                            color = MutedLavender,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium
+                            "Demonstre interesse em sessões\ne envie convites!",
+                            color = MutedLavender, textAlign = TextAlign.Center
                         )
                         Spacer(Modifier.height(8.dp))
                         Button(
                             onClick = { navController.navigate(Routes.Home.route) },
                             colors = ButtonDefaults.buttonColors(containerColor = NeonPurple),
                             shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Ver filmes", fontWeight = FontWeight.Bold)
-                        }
+                        ) { Text("Ver filmes", fontWeight = FontWeight.Bold) }
                     }
                 }
 
@@ -125,15 +117,12 @@ fun MatchesScreen(
                         // ── Convites recebidos ──────────────────
                         if (pending.isNotEmpty()) {
                             item {
-                                SectionHeader(
-                                    title = "Convites recebidos",
-                                    count = pending.size,
-                                    color = NeonPink
-                                )
+                                SectionHeader("Convites recebidos", pending.size, NeonPink)
                             }
-                            items(pending) { match ->
+                            items(pending, key = { it.id }) { match ->
                                 PendingMatchCard(
                                     match = match,
+                                    currentUserId = viewModel.currentUserId,
                                     isResponding = uiState.respondingMatchId == match.id,
                                     onAccept = { viewModel.respondToMatch(match.id, true) },
                                     onDecline = { viewModel.respondToMatch(match.id, false) }
@@ -141,16 +130,12 @@ fun MatchesScreen(
                             }
                         }
 
-                        // ── Matches aceitos (chat disponível) ───
+                        // ── Matches aceitos ─────────────────────
                         if (accepted.isNotEmpty()) {
                             item {
-                                SectionHeader(
-                                    title = "Matches aceitos",
-                                    count = accepted.size,
-                                    color = GreenAccept
-                                )
+                                SectionHeader("Matches aceitos", accepted.size, GreenAccept)
                             }
-                            items(accepted) { match ->
+                            items(accepted, key = { it.id }) { match ->
                                 AcceptedMatchCard(
                                     match = match,
                                     currentUserId = viewModel.currentUserId,
@@ -161,17 +146,16 @@ fun MatchesScreen(
                             }
                         }
 
-                        // ── Convites enviados aguardando ────────
+                        // ── Convites enviados ───────────────────
                         if (sent.isNotEmpty()) {
                             item {
-                                SectionHeader(
-                                    title = "Aguardando resposta",
-                                    count = sent.size,
-                                    color = MutedLavender
-                                )
+                                SectionHeader("Aguardando resposta", sent.size, MutedLavender)
                             }
-                            items(sent) { match ->
-                                SentMatchCard(match = match)
+                            items(sent, key = { it.id }) { match ->
+                                SentMatchCard(
+                                    match = match,
+                                    currentUserId = viewModel.currentUserId
+                                )
                             }
                         }
                     }
@@ -187,34 +171,30 @@ private fun SectionHeader(title: String, count: Int, color: Color) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            title,
-            color = color,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
-        )
-        Surface(
-            color = color.copy(alpha = 0.15f),
-            shape = RoundedCornerShape(50)
-        ) {
-            Text(
-                "$count",
-                color = color,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-            )
+        Text(title, color = color, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Surface(color = color.copy(alpha = 0.15f), shape = RoundedCornerShape(50)) {
+            Text("$count", color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
         }
     }
+}
+
+// Retorna o nome da outra pessoa no match
+private fun Match.otherName(currentUserId: String): String {
+    return if (requesterId == currentUserId) receiverName.ifBlank { "Usuário" }
+    else requesterName.ifBlank { "Usuário" }
 }
 
 @Composable
 private fun PendingMatchCard(
     match: Match,
+    currentUserId: String,
     isResponding: Boolean,
     onAccept: () -> Unit,
     onDecline: () -> Unit
 ) {
+    val otherName = match.otherName(currentUserId)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -223,31 +203,23 @@ private fun PendingMatchCard(
             .border(1.dp, NeonPink.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(Icons.Default.Favorite, contentDescription = null,
-                    tint = NeonPink, modifier = Modifier.size(16.dp))
-                Text("Convite recebido", color = NeonPink,
+            Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.Favorite, null, tint = NeonPink,
+                    modifier = Modifier.size(16.dp))
+                Text("Convite de $otherName", color = NeonPink,
                     fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Alguém quer ir ao cinema com você!",
-                color = Color.White,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                "Match ID: ${match.id.take(8)}...",
-                color = MutedLavender.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.bodySmall
-            )
+            Spacer(Modifier.height(6.dp))
+            Text("$otherName quer ir ao cinema com você!",
+                color = Color.White, style = MaterialTheme.typography.bodyMedium)
+
             Spacer(Modifier.height(14.dp))
 
             if (isResponding) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = NeonPurple, modifier = Modifier.size(28.dp))
+                    CircularProgressIndicator(color = NeonPurple,
+                        modifier = Modifier.size(28.dp))
                 }
             } else {
                 Row(
@@ -259,11 +231,11 @@ private fun PendingMatchCard(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp),
                         border = androidx.compose.foundation.BorderStroke(
-                            1.dp, MaterialTheme.colorScheme.error
-                        )
+                            1.dp, MaterialTheme.colorScheme.error)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Close, null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("Recusar", color = MaterialTheme.colorScheme.error)
                     }
@@ -273,8 +245,8 @@ private fun PendingMatchCard(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = GreenAccept)
                     ) {
-                        Icon(Icons.Default.Favorite, contentDescription = null,
-                            tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Favorite, null, tint = Color.White,
+                            modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("Aceitar", color = Color.White, fontWeight = FontWeight.Bold)
                     }
@@ -290,6 +262,8 @@ private fun AcceptedMatchCard(
     currentUserId: String,
     onOpenChat: () -> Unit
 ) {
+    val otherName = match.otherName(currentUserId)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -305,17 +279,14 @@ private fun AcceptedMatchCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Default.Favorite, contentDescription = null,
-                        tint = GreenAccept, modifier = Modifier.size(16.dp))
-                    Text("Match aceito!", color = GreenAccept,
+                    Icon(Icons.Default.Favorite, null, tint = GreenAccept,
+                        modifier = Modifier.size(16.dp))
+                    Text("Match com $otherName", color = GreenAccept,
                         fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
                 Spacer(Modifier.height(4.dp))
                 Text("O chat está disponível!", color = Color.White,
                     style = MaterialTheme.typography.bodyMedium)
-                Text("ID: ${match.id.take(8)}...",
-                    color = MutedLavender.copy(alpha = 0.5f),
-                    style = MaterialTheme.typography.bodySmall)
             }
             Button(
                 onClick = onOpenChat,
@@ -324,8 +295,8 @@ private fun AcceptedMatchCard(
                 border = androidx.compose.foundation.BorderStroke(1.dp, GreenAccept),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                Icon(Icons.Default.Chat, contentDescription = null,
-                    tint = GreenAccept, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Chat, null, tint = GreenAccept,
+                    modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Abrir chat", color = GreenAccept, fontWeight = FontWeight.Bold)
             }
@@ -334,7 +305,9 @@ private fun AcceptedMatchCard(
 }
 
 @Composable
-private fun SentMatchCard(match: Match) {
+private fun SentMatchCard(match: Match, currentUserId: String) {
+    val otherName = match.otherName(currentUserId)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -347,13 +320,10 @@ private fun SentMatchCard(match: Match) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = MutedLavender.copy(alpha = 0.5f)
-            )
+            CircularProgressIndicator(modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp, color = MutedLavender.copy(alpha = 0.5f))
             Column {
-                Text("Convite enviado", color = MutedLavender,
+                Text("Convite enviado para $otherName", color = MutedLavender,
                     fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Text("Aguardando resposta...",
                     color = MutedLavender.copy(alpha = 0.6f),

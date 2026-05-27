@@ -8,17 +8,21 @@ data class MatchDto(
     val id: String,
     val sessionId: String,
     val requesterId: String,
+    val requesterName: String = "",   // ← nome do remetente
     val receiverId: String,
+    val receiverName: String = "",    // ← nome do destinatário
     val status: String,
     val createdAt: String
 ) {
     fun toDomain() = Match(
-        id = id,
-        sessionId = sessionId,
-        requesterId = requesterId,
-        receiverId = receiverId,
-        status = MatchStatus.valueOf(status),
-        createdAt = createdAt
+        id            = id,
+        sessionId     = sessionId,
+        requesterId   = requesterId,
+        requesterName = requesterName,
+        receiverId    = receiverId,
+        receiverName  = receiverName,
+        status        = MatchStatus.valueOf(status),
+        createdAt     = createdAt
     )
 }
 
