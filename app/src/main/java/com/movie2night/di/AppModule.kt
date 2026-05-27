@@ -34,14 +34,10 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    // ── DataStore ─────────────────────────────────────────────
-    @Provides
-    @Singleton
-    fun provideAuthDataStore(@ApplicationContext context: Context): AuthDataStore {
-        return AuthDataStore(context)
-    }
+    @Provides @Singleton
+    fun provideAuthDataStore(@ApplicationContext context: Context): AuthDataStore =
+        AuthDataStore(context)
 
-    // ── APIs Retrofit ─────────────────────────────────────────
     @Provides @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
 
@@ -57,8 +53,6 @@ object AppModule {
     @Provides @Singleton
     fun provideUserApi(retrofit: Retrofit): UserApi = retrofit.create(UserApi::class.java)
 
-    // ── Repositories ──────────────────────────────────────────
-    // Aqui o Hilt aprende: "quando alguém pedir AuthRepository, entregue AuthRepositoryImpl"
     @Provides @Singleton
     fun provideAuthRepository(
         authApi: AuthApi,
@@ -81,7 +75,6 @@ object AppModule {
     fun provideUserRepository(userApi: UserApi): UserRepository =
         UserRepositoryImpl(userApi)
 
-    // ── UseCases ──────────────────────────────────────────────
     @Provides @Singleton
     fun provideLoginUseCase(authRepository: AuthRepository): LoginUseCase =
         LoginUseCase(authRepository)
