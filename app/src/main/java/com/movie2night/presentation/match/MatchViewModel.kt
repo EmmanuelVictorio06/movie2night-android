@@ -2,6 +2,7 @@ package com.movie2night.presentation.match
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movie2night.core.network.toUserMessage
 import com.movie2night.data.local.datastore.AuthDataStore
 import com.movie2night.domain.model.Match
 import com.movie2night.domain.model.User
@@ -49,7 +50,7 @@ class MatchViewModel @Inject constructor(
                 .onFailure {
                     _uiState.value = MatchUiState(
                         isLoading = false,
-                        errorMessage = it.message ?: "Erro ao carregar usuários"
+                        errorMessage = it.toUserMessage()
                     )
                 }
         }
@@ -72,7 +73,7 @@ class MatchViewModel @Inject constructor(
                 .onFailure {
                     _uiState.value = _uiState.value.copy(
                         sendingToUserId = null,
-                        errorMessage = it.message ?: "Erro ao enviar convite"
+                        errorMessage = it.toUserMessage()
                     )
                 }
         }

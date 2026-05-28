@@ -1,8 +1,12 @@
 package com.movie2night.data.remote.api
 
+import com.movie2night.data.remote.dto.CheckInRequest
+import com.movie2night.data.remote.dto.CheckInResponseDto
 import com.movie2night.data.remote.dto.MovieDto
 import com.movie2night.data.remote.dto.SessionDto
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -18,4 +22,10 @@ interface MovieApi {
 
     @GET("sessions/{sessionId}")
     suspend fun getSessionById(@Path("sessionId") sessionId: String): SessionDto
+
+    @POST("sessions/{sessionId}/checkin")
+    suspend fun checkIn(
+        @Path("sessionId") sessionId: String,
+        @Body request: CheckInRequest
+    ): CheckInResponseDto
 }

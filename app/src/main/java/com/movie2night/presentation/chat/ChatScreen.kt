@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.movie2night.domain.model.Message
+import com.movie2night.navigation.Routes
+import java.time.LocalDate
 
 private val NightBlack     = Color(0xFF07070F)
 private val MidnightPurple = Color(0xFF1A0B3D)
@@ -51,8 +54,9 @@ fun ChatScreen(
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    // Inicia o polling de mensagens
+    // Carrega o outro usuário e inicia o polling de mensagens
     LaunchedEffect(matchId) {
+        viewModel.loadMatchInfo(matchId)
         viewModel.startPolling(matchId)
     }
 
@@ -69,7 +73,7 @@ fun ChatScreen(
                 title = {
                     Column {
                         Text(
-                            "Chat",
+                            uiState.otherUserName,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             color = Color.White
@@ -88,6 +92,19 @@ fun ChatScreen(
                             contentDescription = "Voltar",
                             tint = Color.White
                         )
+                    }
+                },
+                actions = {
+                    if (uiState.otherUserId.isNotBlank()) {
+                        IconButton(onClick = {
+                            navController.navigate(Routes.UserProfile.withId(uiState.otherUserId))
+                        }) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Ver perfil",
+                                tint = NeonPurple
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -240,10 +257,15 @@ fun ChatScreen(
                         ),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        items(
+                        itemsIndexed(
                             items = uiState.messages,
-                            key = { it.id }
-                        ) { message ->
+                            key = { _, message -> message.id }
+                        ) { index, message ->
+                            val showDate = index == 0 ||
+                                    dayOf(message.sentAt) != dayOf(uiState.messages[index - 1].sentAt)
+                            if (showDate) {
+                                DateSeparator(label = formatDateLabel(message.sentAt))
+                            }
                             MessageBubble(
                                 message = message,
                                 isFromMe = message.senderId == uiState.currentUserId
@@ -325,6 +347,43 @@ fun formatMessageTime(sentAt: String): String {
     return try {
         // "2026-05-26T19:30:00" → "19:30"
         sentAt.substring(11, 16)
+    } catch (e: Exception) {
+        ""
+    }
+}
+
+@Composable
+private fun DateSeparator(label: String) {
+    if (label.isBlank()) return
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            color = Color.White.copy(alpha = 0.08f),
+            shape = RoundedCornerShape(50)
+        ) {
+            Text(
+                text = label,
+                color = MutedLavender,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+private fun dayOf(iso: String): String = try { iso.substring(0, 10) } catch (e: Exception) { "" }
+
+fun formatDateLabel(iso: String): String {
+    return try {
+        val date = LocalDate.parse(iso.substring(0, 10))
+        val today = LocalDate.now()
+        when (date) {
+            today -> "Hoje"
+            today.minusDays(1) -> "Ontem"
+            else -> "%02d/%02d/%04d".format(date.dayOfMonth, date.monthValue, date.year)
+        }
     } catch (e: Exception) {
         ""
     }

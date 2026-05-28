@@ -10,7 +10,8 @@ interface UserRepository {
     suspend fun updateProfile(
         name: String,
         bio: String?,
-        photoUrl: String?
+        photoUrl: String?,
+        intention: String
     ): Result<User>
 
     suspend fun rateUser(

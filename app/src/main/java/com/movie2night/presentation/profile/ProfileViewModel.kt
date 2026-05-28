@@ -21,7 +21,8 @@ data class ProfileUiState(
     val errorMessage: String? = null,
     val isSaveSuccess: Boolean = false,
     val isReportSuccess: Boolean = false,
-    val isBlockSuccess: Boolean = false
+    val isBlockSuccess: Boolean = false,
+    val isLoggedOut: Boolean = false
 )
 
 @HiltViewModel
@@ -76,9 +77,10 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             uiState = uiState.copy(isSaving = true, errorMessage = null)
             userRepository.updateProfile(
-                name     = name.trim(),
-                bio      = bio.trim().ifBlank { null },
-                photoUrl = photoUrl
+                name      = name.trim(),
+                bio       = bio.trim().ifBlank { null },
+                photoUrl  = photoUrl,
+                intention = intention.name
             )
                 .onSuccess { uiState = uiState.copy(isSaving = false, isSaveSuccess = true, user = it) }
                 .onFailure { uiState = uiState.copy(isSaving = false, errorMessage = it.message) }
@@ -98,6 +100,13 @@ class ProfileViewModel @Inject constructor(
             userRepository.blockUser(userId)
                 .onSuccess { uiState = uiState.copy(isBlockSuccess = true) }
                 .onFailure { uiState = uiState.copy(errorMessage = "Erro ao bloquear usuário") }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authDataStore.clear()
+            uiState = uiState.copy(isLoggedOut = true)
         }
     }
 

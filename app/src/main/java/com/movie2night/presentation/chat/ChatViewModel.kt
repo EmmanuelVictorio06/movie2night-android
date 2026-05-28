@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.movie2night.data.local.datastore.AuthDataStore
 import com.movie2night.domain.model.Message
 import com.movie2night.domain.repository.ChatRepository
+import com.movie2night.domain.repository.MatchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,12 +19,15 @@ data class ChatUiState(
     val messages: List<Message> = emptyList(),
     val errorMessage: String? = null,
     val isSending: Boolean = false,
-    val currentUserId: String = ""
+    val currentUserId: String = "",
+    val otherUserId: String = "",
+    val otherUserName: String = "Chat"
 )
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
+    private val matchRepository: MatchRepository,
     private val authDataStore: AuthDataStore
 ) : ViewModel() {
 
@@ -34,6 +38,21 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authDataStore.getUserId() ?: ""
             _uiState.value = _uiState.value.copy(currentUserId = userId)
+        }
+    }
+
+    // Carrega quem é o outro usuário (para o título e o botão de perfil)
+    fun loadMatchInfo(matchId: String) {
+        viewModelScope.launch {
+            val uid = authDataStore.getUserId() ?: ""
+            val match = matchRepository.getMatchById(matchId) ?: return@launch
+            val otherId = if (match.requesterId == uid) match.receiverId else match.requesterId
+            val otherName = if (match.requesterId == uid) match.receiverName else match.requesterName
+            _uiState.value = _uiState.value.copy(
+                currentUserId = uid,
+                otherUserId = otherId,
+                otherUserName = otherName.ifBlank { "Usuário" }
+            )
         }
     }
 

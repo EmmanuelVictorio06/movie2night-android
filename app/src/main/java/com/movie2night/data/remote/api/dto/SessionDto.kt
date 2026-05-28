@@ -1,5 +1,6 @@
 package com.movie2night.data.remote.dto
 
+import com.movie2night.domain.model.CheckInResult
 import com.movie2night.domain.model.Cinema
 import com.movie2night.domain.model.Session
 
@@ -21,7 +22,8 @@ data class SessionDto(
     val dateTime: String,
     val room: String?,
     val availableSeats: Int?,
-    val interestedCount: Int
+    val interestedCount: Int,
+    val userInterested: Boolean = false
 ) {
     fun toDomain() = Session(
         id = id,
@@ -30,7 +32,27 @@ data class SessionDto(
         dateTime = dateTime,
         room = room,
         availableSeats = availableSeats,
-        interestedCount = interestedCount
+        interestedCount = interestedCount,
+        userInterested = userInterested
+    )
+}
+
+data class CheckInRequest(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class CheckInResponseDto(
+    val success: Boolean,
+    val distanceMeters: Int,
+    val message: String,
+    val ratingUnlocked: Boolean
+) {
+    fun toDomain() = CheckInResult(
+        success = success,
+        distanceMeters = distanceMeters,
+        message = message,
+        ratingUnlocked = ratingUnlocked
     )
 }
 

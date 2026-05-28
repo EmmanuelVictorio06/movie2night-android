@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
@@ -31,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.movie2night.domain.model.UserIntention
+import com.movie2night.navigation.Routes
 
 private val NightBlack     = Color(0xFF07070F)
 private val MidnightPurple = Color(0xFF1A0B3D)
@@ -59,6 +61,14 @@ fun MyProfileScreen(
         if (uiState.isSaveSuccess) {
             isEditing = false
             viewModel.clearSuccess()
+        }
+    }
+
+    LaunchedEffect(uiState.isLoggedOut) {
+        if (uiState.isLoggedOut) {
+            navController.navigate(Routes.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
         }
     }
 
@@ -207,6 +217,27 @@ fun MyProfileScreen(
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.fillMaxWidth())
+                            }
+
+                            Spacer(Modifier.height(40.dp))
+
+                            OutlinedButton(
+                                onClick = { viewModel.logout() },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                                )
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Logout,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Sair da conta", color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.SemiBold)
                             }
 
                         } else {
