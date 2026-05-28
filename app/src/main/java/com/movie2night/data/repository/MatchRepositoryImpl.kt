@@ -6,9 +6,11 @@ import com.movie2night.data.remote.api.MatchRequest
 import com.movie2night.data.remote.api.MatchResponse
 import com.movie2night.domain.model.Interest
 import com.movie2night.domain.model.Match
+import com.movie2night.domain.model.MatchStatus
 import com.movie2night.domain.model.User
 import com.movie2night.domain.model.UserIntention
 import com.movie2night.domain.repository.MatchRepository
+import retrofit2.HttpException
 
 class MatchRepositoryImpl(
     private val matchApi: MatchApi
@@ -31,10 +33,31 @@ class MatchRepositoryImpl(
         }
     }
 
-    override suspend fun sendMatchRequest(receiverId: String, sessionId: String): Result<Match> =
-        runCatching {
-            matchApi.sendMatchRequest(MatchRequest(receiverId, sessionId)).toDomain()
+    override suspend fun sendMatchRequest(receiverId: String, sessionId: String): Result<Match> {
+        return try {
+            val match = matchApi.sendMatchRequest(MatchRequest(receiverId, sessionId)).toDomain()
+            Result.success(match)
+        } catch (e: HttpException) {
+            if (e.code() == 409) {
+                // 409 = já existe match entre esses usuários nessa sessão
+                // Trata como sucesso — o botão deve mostrar "Enviado ✓"
+                Result.success(
+                    Match(
+                        id = "existing",
+                        sessionId = sessionId,
+                        requesterId = "",
+                        receiverId = receiverId,
+                        status = MatchStatus.PENDING,
+                        createdAt = ""
+                    )
+                )
+            } else {
+                Result.failure(e)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
+    }
 
     override suspend fun respondToMatch(matchId: String, accept: Boolean): Result<Match> =
         runCatching {
