@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.movie2night.core.network.toUserMessage
 import com.movie2night.data.local.datastore.AuthDataStore
 import com.movie2night.domain.model.Match
-import com.movie2night.domain.model.MatchStatus
 import com.movie2night.domain.repository.MatchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +16,11 @@ data class MatchesUiState(
     val isLoading: Boolean = true,
     val matches: List<Match> = emptyList(),
     val errorMessage: String? = null,
-    val respondingMatchId: String? = null
+    val respondingMatchId: String? = null,
+    val showUnmatchDialog: Boolean = false,
+    val unmatchTargetId: String? = null,
+    val unmatchTargetName: String? = null,
+    val isUnmatching: Boolean = false
 )
 
 @HiltViewModel
@@ -68,6 +71,42 @@ class MatchesViewModel @Inject constructor(
                         errorMessage = it.toUserMessage()
                     )
                 }
+        }
+    }
+
+    fun requestUnmatch(matchId: String, otherName: String) {
+        _uiState.value = _uiState.value.copy(
+            showUnmatchDialog = true,
+            unmatchTargetId = matchId,
+            unmatchTargetName = otherName
+        )
+    }
+
+    fun dismissUnmatchDialog() {
+        _uiState.value = _uiState.value.copy(
+            showUnmatchDialog = false,
+            unmatchTargetId = null,
+            unmatchTargetName = null
+        )
+    }
+
+    fun confirmUnmatch() {
+        val matchId = _uiState.value.unmatchTargetId ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isUnmatching = true,
+                showUnmatchDialog = false,
+                unmatchTargetId = null,
+                unmatchTargetName = null
+            )
+            matchRepository.unmatch(matchId)
+                .onSuccess { loadMatches() }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = it.toUserMessage()
+                    )
+                }
+            _uiState.value = _uiState.value.copy(isUnmatching = false)
         }
     }
 }
