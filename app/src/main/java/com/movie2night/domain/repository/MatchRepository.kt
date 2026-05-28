@@ -14,4 +14,6 @@ interface MatchRepository {
     suspend fun respondToMatch(matchId: String, accept: Boolean): Result<Match>
 
     suspend fun getMyMatches(): List<Match>
+
+    suspend fun getMatchById(matchId: String): Match?
 }

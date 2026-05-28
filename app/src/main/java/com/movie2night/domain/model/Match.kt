@@ -5,10 +5,16 @@ data class Match(
     val sessionId: String,
     val requesterId: String,
     val requesterName: String = "",
+    val requesterPhotoUrl: String? = null,
     val receiverId: String,
     val receiverName: String = "",
+    val receiverPhotoUrl: String? = null,
+    val movieTitle: String = "",
+    val sessionDateTime: String = "",
     val status: MatchStatus,
-    val createdAt: String
+    val createdAt: String,
+    val lastMessageAt: String? = null,
+    val lastMessageContent: String? = null
 )
 
 enum class MatchStatus {

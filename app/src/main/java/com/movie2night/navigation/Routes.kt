@@ -20,4 +20,13 @@ sealed class Routes(val route: String) {
     object UserProfile : Routes("profile/{userId}") {
         fun withId(id: String) = "profile/$id"
     }
+
+    object CheckIn : Routes("checkin/{sessionId}/{matchId}/{ratedUserId}") {
+        fun build(sessionId: String, matchId: String, ratedUserId: String) =
+            "checkin/$sessionId/$matchId/$ratedUserId"
+    }
+    object Rating : Routes("rating/{matchId}/{ratedUserId}") {
+        fun build(matchId: String, ratedUserId: String) =
+            "rating/$matchId/$ratedUserId"
+    }
 }

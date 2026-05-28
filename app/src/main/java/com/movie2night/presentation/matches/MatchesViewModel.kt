@@ -2,6 +2,7 @@ package com.movie2night.presentation.matches
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movie2night.core.network.toUserMessage
 import com.movie2night.data.local.datastore.AuthDataStore
 import com.movie2night.domain.model.Match
 import com.movie2night.domain.model.MatchStatus
@@ -40,13 +41,17 @@ class MatchesViewModel @Inject constructor(
 
     fun loadMatches() {
         viewModelScope.launch {
-            _uiState.value = MatchesUiState(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             runCatching { matchRepository.getMyMatches() }
-                .onSuccess { _uiState.value = MatchesUiState(isLoading = false, matches = it) }
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false, matches = it, errorMessage = null
+                    )
+                }
                 .onFailure {
-                    _uiState.value = MatchesUiState(
+                    _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = it.message ?: "Erro ao carregar matches"
+                        errorMessage = it.toUserMessage()
                     )
                 }
         }
@@ -60,7 +65,7 @@ class MatchesViewModel @Inject constructor(
                 .onFailure {
                     _uiState.value = _uiState.value.copy(
                         respondingMatchId = null,
-                        errorMessage = it.message ?: "Erro ao responder convite"
+                        errorMessage = it.toUserMessage()
                     )
                 }
         }

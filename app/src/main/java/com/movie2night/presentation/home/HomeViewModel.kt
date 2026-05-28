@@ -2,6 +2,7 @@ package com.movie2night.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movie2night.core.network.toUserMessage
 import com.movie2night.domain.model.Movie
 import com.movie2night.domain.usecase.GetMoviesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,19 +32,20 @@ class HomeViewModel @Inject constructor(
 
     fun loadMovies() {
         viewModelScope.launch {
-            _uiState.value = HomeUiState(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
             getMoviesUseCase()
                 .catch { error ->
-                    _uiState.value = HomeUiState(
+                    _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Erro ao carregar filmes."
+                        errorMessage = error.toUserMessage()
                     )
                 }
                 .collect { movies ->
-                    _uiState.value = HomeUiState(
+                    _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        movies = movies
+                        movies = movies,
+                        errorMessage = null
                     )
                 }
         }

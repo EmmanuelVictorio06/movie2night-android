@@ -7,8 +7,8 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-data class UpdateProfileRequest(val name: String, val bio: String?, val photoUrl: String?)
-data class RatingRequest(val ratedUserId: String, val score: Int, val comment: String?)
+data class UpdateProfileRequest(val name: String, val bio: String?, val photoUrl: String?, val intention: String)
+data class RatingRequest(val matchId: String, val ratedUserId: String, val score: Int, val comment: String?)
 data class ReportRequest(val reportedUserId: String, val reason: String, val description: String?)
 data class BlockRequest(val blockedUserId: String)
 
@@ -22,10 +22,10 @@ interface UserApi {
     @POST("ratings")
     suspend fun rateUser(@Body request: RatingRequest)
 
-    @POST("reports")
+    @POST("users/reports")
     suspend fun reportUser(@Body request: ReportRequest)
 
-    @POST("blocks")
+    @POST("users/blocks")
     suspend fun blockUser(@Body request: BlockRequest)
 }
 

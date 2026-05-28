@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -70,13 +71,13 @@ fun HomeScreen(
                 )
         ) {
             when {
-                uiState.isLoading -> {
+                uiState.isLoading && uiState.movies.isEmpty() -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = NeonPurple
                     )
                 }
-                uiState.errorMessage != null -> {
+                uiState.errorMessage != null && uiState.movies.isEmpty() -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center).padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -96,28 +97,35 @@ fun HomeScreen(
                     }
                 }
                 else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    PullToRefreshBox(
+                        isRefreshing = uiState.isLoading,
+                        onRefresh = { viewModel.loadMovies() },
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        item {
-                            Text(
-                                "Filmes em cartaz",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                        }
-                        items(uiState.movies) { movie ->
-                            MovieCard(
-                                movie = movie,
-                                onClick = {
-                                    navController.navigate(
-                                        Routes.MovieSessions.withId(movie.id)
-                                    )
-                                }
-                            )
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            item {
+                                Text(
+                                    "Filmes em cartaz",
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+                            items(uiState.movies) { movie ->
+                                MovieCard(
+                                    movie = movie,
+                                    onClick = {
+                                        navController.navigate(
+                                            Routes.MovieSessions.withId(movie.id)
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }

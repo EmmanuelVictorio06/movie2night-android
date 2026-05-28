@@ -11,5 +11,6 @@ data class Session(
     val dateTime: String,           // formato: "2025-06-15T19:30:00"
     val room: String?,              // número ou nome da sala (opcional)
     val availableSeats: Int?,
-    val interestedCount: Int        // quantas pessoas marcaram interesse
+    val interestedCount: Int,       // quantas pessoas marcaram interesse
+    val userInterested: Boolean     // se o usuário logado já demonstrou interesse
 )

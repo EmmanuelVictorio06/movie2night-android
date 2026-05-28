@@ -28,9 +28,9 @@ class UserRepositoryImpl(
     }.getOrNull()
 
     override suspend fun updateProfile(
-        name: String, bio: String?, photoUrl: String?
+        name: String, bio: String?, photoUrl: String?, intention: String
     ): Result<User> = runCatching {
-        val dto = userApi.updateProfile(UpdateProfileRequest(name, bio, photoUrl))
+        val dto = userApi.updateProfile(UpdateProfileRequest(name, bio, photoUrl, intention))
         User(
             id = dto.id, name = dto.name, email = dto.email,
             birthDate = dto.birthDate, photoUrl = dto.photoUrl, bio = dto.bio,
@@ -43,7 +43,7 @@ class UserRepositoryImpl(
     override suspend fun rateUser(
         matchId: String, ratedUserId: String, score: Int, comment: String?
     ): Result<Rating> = runCatching {
-        userApi.rateUser(RatingRequest(ratedUserId, score, comment))
+        userApi.rateUser(RatingRequest(matchId, ratedUserId, score, comment))
         Rating(
             id = "", matchId = matchId, raterId = "",
             ratedUserId = ratedUserId, score = score,

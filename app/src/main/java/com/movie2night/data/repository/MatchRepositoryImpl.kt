@@ -67,4 +67,8 @@ class MatchRepositoryImpl(
     override suspend fun getMyMatches(): List<Match> {
         return matchApi.getMyMatches().map { it.toDomain() }
     }
+
+    override suspend fun getMatchById(matchId: String): Match? = runCatching {
+        matchApi.getMatchById(matchId).toDomain()
+    }.getOrNull()
 }

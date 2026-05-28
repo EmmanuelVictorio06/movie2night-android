@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,8 +20,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.movie2night.presentation.matches.MatchesBadgeViewModel
 
 private val NightBlack    = Color(0xFF07070F)
 private val NeonPurple    = Color(0xFFB14CFF)
@@ -47,9 +50,15 @@ val bottomNavItems = listOf(
 )
 
 @Composable
-fun SharedBottomNavBar(navController: NavController) {
+fun SharedBottomNavBar(
+    navController: NavController,
+    badgeViewModel: MatchesBadgeViewModel = hiltViewModel()
+) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    // Recarrega a contagem de convites pendentes ao trocar de aba
+    LaunchedEffect(currentRoute) { badgeViewModel.refresh() }
 
     Surface(
         color = NightBlack.copy(alpha = 0.95f),
@@ -78,6 +87,8 @@ fun SharedBottomNavBar(navController: NavController) {
                 BottomNavItemView(
                     item = item,
                     active = isActive,
+                    badgeCount = if (item.route == Routes.Matches.route)
+                        badgeViewModel.pendingCount else 0,
                     onClick = {
                         when (item.route) {
                             Routes.Home.route -> {
@@ -108,6 +119,7 @@ fun SharedBottomNavBar(navController: NavController) {
 private fun BottomNavItemView(
     item: BottomNavItem,
     active: Boolean,
+    badgeCount: Int,
     onClick: () -> Unit
 ) {
     Column(
@@ -121,12 +133,22 @@ private fun BottomNavItemView(
             )
             .clickable { onClick() }
     ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.label,
-            tint = if (active) NeonPurple else MutedLavender.copy(alpha = 0.5f),
-            modifier = Modifier.size(24.dp)
-        )
+        BadgedBox(
+            badge = {
+                if (badgeCount > 0) {
+                    Badge(containerColor = Color(0xFFE94FD1), contentColor = Color.White) {
+                        Text(if (badgeCount > 9) "9+" else "$badgeCount", fontSize = 10.sp)
+                    }
+                }
+            }
+        ) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                tint = if (active) NeonPurple else MutedLavender.copy(alpha = 0.5f),
+                modifier = Modifier.size(24.dp)
+            )
+        }
         Spacer(Modifier.height(2.dp))
         Text(
             text = item.label,

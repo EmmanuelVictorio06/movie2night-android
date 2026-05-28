@@ -2,6 +2,7 @@ package com.movie2night.presentation.session
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movie2night.core.network.toUserMessage
 import com.movie2night.domain.model.Session
 import com.movie2night.domain.repository.MatchRepository
 import com.movie2night.domain.repository.MovieRepository
@@ -42,7 +43,7 @@ class SessionViewModel @Inject constructor(
             }.onFailure { error ->
                 _uiState.value = SessionUiState(
                     isLoading = false,
-                    errorMessage = error.message ?: "Erro ao carregar sessões."
+                    errorMessage = error.toUserMessage()
                 )
             }
         }
@@ -66,7 +67,7 @@ class SessionViewModel @Inject constructor(
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
                         registeringInterestSessionId = null,
-                        errorMessage = error.message ?: "Erro ao registrar interesse."
+                        errorMessage = error.toUserMessage()
                     )
                 }
         }

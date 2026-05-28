@@ -16,7 +16,9 @@ import androidx.navigation.navArgument
 import com.movie2night.presentation.auth.LoginScreen
 import com.movie2night.presentation.auth.RegisterScreen
 import com.movie2night.presentation.chat.ChatScreen
+import com.movie2night.presentation.checkin.CheckInScreen
 import com.movie2night.presentation.home.HomeScreen
+import com.movie2night.presentation.rating.RatingScreen
 import com.movie2night.presentation.match.InterestedUsersScreen
 import com.movie2night.presentation.matches.MatchesScreen
 import com.movie2night.presentation.profile.CreateProfileScreen
@@ -27,12 +29,30 @@ import com.movie2night.presentation.session.SessionScreen
 @Composable
 fun MovieNavHost(
     isLoggedIn: Boolean,
+    deepLinkScreen: String? = null,
+    deepLinkMatchId: String? = null,
+    onDeepLinkHandled: () -> Unit = {},
     navController: NavHostController = rememberNavController()
 ) {
     val start = if (isLoggedIn) Routes.Home.route else Routes.Login.route
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    // Navegação ao tocar na notificação push (deep link via Intent extras)
+    androidx.compose.runtime.LaunchedEffect(deepLinkScreen, deepLinkMatchId) {
+        if (isLoggedIn && deepLinkScreen != null) {
+            when (deepLinkScreen) {
+                "chat" -> if (!deepLinkMatchId.isNullOrBlank()) {
+                    navController.navigate(Routes.Chat.withId(deepLinkMatchId))
+                } else {
+                    navController.navigate(Routes.Matches.route)
+                }
+                "matches" -> navController.navigate(Routes.Matches.route)
+            }
+            onDeepLinkHandled()
+        }
+    }
 
     // Bottom nav aparece nas rotas principais + sessões
     val showBottomNav = bottomNavRoutes.any { bottomRoute ->
@@ -92,6 +112,36 @@ fun MovieNavHost(
                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
             ) { back ->
                 UserProfileScreen(navController, back.arguments?.getString("userId") ?: "")
+            }
+
+            composable(
+                route = Routes.CheckIn.route,
+                arguments = listOf(
+                    navArgument("sessionId") { type = NavType.StringType },
+                    navArgument("matchId") { type = NavType.StringType },
+                    navArgument("ratedUserId") { type = NavType.StringType }
+                )
+            ) { back ->
+                CheckInScreen(
+                    navController = navController,
+                    sessionId = back.arguments?.getString("sessionId") ?: "",
+                    matchId = back.arguments?.getString("matchId") ?: "",
+                    ratedUserId = back.arguments?.getString("ratedUserId") ?: ""
+                )
+            }
+
+            composable(
+                route = Routes.Rating.route,
+                arguments = listOf(
+                    navArgument("matchId") { type = NavType.StringType },
+                    navArgument("ratedUserId") { type = NavType.StringType }
+                )
+            ) { back ->
+                RatingScreen(
+                    navController = navController,
+                    matchId = back.arguments?.getString("matchId") ?: "",
+                    ratedUserId = back.arguments?.getString("ratedUserId") ?: ""
+                )
             }
         }
     }

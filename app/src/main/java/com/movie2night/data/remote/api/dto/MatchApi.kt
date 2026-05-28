@@ -30,4 +30,7 @@ interface MatchApi {
 
     @GET("matches/me")
     suspend fun getMyMatches(): List<MatchDto>
+
+    @GET("matches/{matchId}")
+    suspend fun getMatchById(@Path("matchId") matchId: String): MatchDto
 }

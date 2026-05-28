@@ -1,6 +1,8 @@
 package com.movie2night.data.repository
 
 import com.movie2night.data.remote.api.MovieApi
+import com.movie2night.data.remote.dto.CheckInRequest
+import com.movie2night.domain.model.CheckInResult
 import com.movie2night.domain.model.Movie
 import com.movie2night.domain.model.Session
 import com.movie2night.domain.repository.MovieRepository
@@ -27,4 +29,12 @@ class MovieRepositoryImpl(
     override suspend fun getSessionById(sessionId: String): Session? = runCatching {
         movieApi.getSessionById(sessionId).toDomain()
     }.getOrNull()
+
+    override suspend fun checkIn(
+        sessionId: String,
+        latitude: Double,
+        longitude: Double
+    ): Result<CheckInResult> = runCatching {
+        movieApi.checkIn(sessionId, CheckInRequest(latitude, longitude)).toDomain()
+    }
 }

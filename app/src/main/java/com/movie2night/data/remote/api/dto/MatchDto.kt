@@ -8,21 +8,33 @@ data class MatchDto(
     val id: String,
     val sessionId: String,
     val requesterId: String,
-    val requesterName: String = "",   // ← nome do remetente
+    val requesterName: String = "",
+    val requesterPhotoUrl: String? = null,
     val receiverId: String,
-    val receiverName: String = "",    // ← nome do destinatário
+    val receiverName: String = "",
+    val receiverPhotoUrl: String? = null,
+    val movieTitle: String = "",
+    val sessionDateTime: String = "",
     val status: String,
-    val createdAt: String
+    val createdAt: String,
+    val lastMessageAt: String? = null,
+    val lastMessageContent: String? = null
 ) {
     fun toDomain() = Match(
-        id            = id,
-        sessionId     = sessionId,
-        requesterId   = requesterId,
-        requesterName = requesterName,
-        receiverId    = receiverId,
-        receiverName  = receiverName,
-        status        = MatchStatus.valueOf(status),
-        createdAt     = createdAt
+        id                 = id,
+        sessionId          = sessionId,
+        requesterId        = requesterId,
+        requesterName      = requesterName,
+        requesterPhotoUrl  = requesterPhotoUrl,
+        receiverId         = receiverId,
+        receiverName       = receiverName,
+        receiverPhotoUrl   = receiverPhotoUrl,
+        movieTitle         = movieTitle,
+        sessionDateTime    = sessionDateTime,
+        status             = MatchStatus.valueOf(status),
+        createdAt          = createdAt,
+        lastMessageAt      = lastMessageAt,
+        lastMessageContent = lastMessageContent
     )
 }
 
