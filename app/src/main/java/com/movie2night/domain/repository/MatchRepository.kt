@@ -16,4 +16,6 @@ interface MatchRepository {
     suspend fun getMyMatches(): List<Match>
 
     suspend fun getMatchById(matchId: String): Match?
+
+    suspend fun unmatch(matchId: String): Result<Unit>
 }

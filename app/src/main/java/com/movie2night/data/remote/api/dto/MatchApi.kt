@@ -3,6 +3,7 @@ package com.movie2night.data.remote.api
 import com.movie2night.data.remote.dto.MatchDto
 import com.movie2night.data.remote.dto.UserDto
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -33,4 +34,7 @@ interface MatchApi {
 
     @GET("matches/{matchId}")
     suspend fun getMatchById(@Path("matchId") matchId: String): MatchDto
+
+    @DELETE("matches/{matchId}")
+    suspend fun unmatch(@Path("matchId") matchId: String)
 }

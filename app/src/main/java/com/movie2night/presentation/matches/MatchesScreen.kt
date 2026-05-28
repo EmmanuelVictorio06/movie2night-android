@@ -54,6 +54,45 @@ fun MatchesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Diálogo de confirmação para desfazer match
+    if (uiState.showUnmatchDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissUnmatchDialog() },
+            containerColor = Color(0xFF1C1030),
+            title = {
+                Text(
+                    "Desfazer match?",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "Tem certeza que deseja desfazer o match com ${uiState.unmatchTargetName ?: "este usuário"}? Isso apagará a conversa permanentemente.",
+                    color = MutedLavender,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.confirmUnmatch() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Desfazer", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissUnmatchDialog() }) {
+                    Text("Cancelar", color = MutedLavender)
+                }
+            }
+        )
+    }
+
     val pending = uiState.matches.filter {
         it.status == MatchStatus.PENDING && it.receiverId == viewModel.currentUserId
     }
@@ -153,6 +192,8 @@ fun MatchesScreen(
                             items(accepted, key = { it.id }) { match ->
                                 val otherId = if (match.requesterId == viewModel.currentUserId)
                                     match.receiverId else match.requesterId
+                                val otherName = if (match.requesterId == viewModel.currentUserId)
+                                    match.receiverName else match.requesterName
                                 AcceptedMatchCard(
                                     match = match,
                                     currentUserId = viewModel.currentUserId,
@@ -163,6 +204,9 @@ fun MatchesScreen(
                                         navController.navigate(
                                             Routes.CheckIn.build(match.sessionId, match.id, otherId)
                                         )
+                                    },
+                                    onUnmatch = {
+                                        viewModel.requestUnmatch(match.id, otherName)
                                     }
                                 )
                             }
@@ -354,7 +398,8 @@ private fun AcceptedMatchCard(
     match: Match,
     currentUserId: String,
     onOpenChat: () -> Unit,
-    onCheckIn: () -> Unit
+    onCheckIn: () -> Unit,
+    onUnmatch: () -> Unit
 ) {
     val otherName = match.otherName(currentUserId)
 
@@ -407,7 +452,7 @@ private fun AcceptedMatchCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
                     onClick = onOpenChat,
@@ -419,8 +464,8 @@ private fun AcceptedMatchCard(
                 ) {
                     Icon(Icons.Default.Chat, null, tint = GreenAccept,
                         modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Abrir chat", color = GreenAccept, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Chat", color = GreenAccept, fontWeight = FontWeight.Bold)
                 }
                 Button(
                     onClick = onCheckIn,
@@ -431,8 +476,22 @@ private fun AcceptedMatchCard(
                 ) {
                     Icon(Icons.Default.LocationOn, null, tint = Color.White,
                         modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(4.dp))
                     Text("Check-in", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+                IconButton(
+                    onClick = onUnmatch,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
+                        .size(42.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Desfazer match",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }

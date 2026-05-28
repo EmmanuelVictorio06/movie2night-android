@@ -71,4 +71,8 @@ class MatchRepositoryImpl(
     override suspend fun getMatchById(matchId: String): Match? = runCatching {
         matchApi.getMatchById(matchId).toDomain()
     }.getOrNull()
+
+    override suspend fun unmatch(matchId: String): Result<Unit> = runCatching {
+        matchApi.unmatch(matchId)
+    }
 }
